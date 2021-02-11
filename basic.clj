@@ -663,7 +663,7 @@
 (defn palabra-reservada? [x]
   (= x 
     (some #{x} '(
-      LOAD SAVE INPUT PRINT ? DATA READ REM RESTORE CLEAR LET/
+      LOAD SAVE INPUT PRINT ? DATA READ REM RESTORE CLEAR LET
       LIST NEW RUN END FOR TO NEXT STEP GOSUB RETURN GOTO IF 
       THEN ON ENV EXIT ATN INT SIN LED MID$ ASC CHR$ STR$
       )
@@ -987,6 +987,7 @@
 ; "-.5"
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn eliminar-cero-entero [n]
+  (clojure.string/replace (str n) #"0." ".")
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
