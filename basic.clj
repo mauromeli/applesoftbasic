@@ -4,6 +4,7 @@
 ; https://fjkraan.home.xs4all.nl/comp/apple2faq/app2asoftfaq.html
 ; https://www.landsnail.com/a2ref.htm
 ; https://mitpress.mit.edu/sites/default/files/sicp/full-text/book/book.html
+(require '[clojure.string :as str])
 
 (declare driver-loop)                     ; NO TOCAR
 (declare string-a-tokens)                 ; NO TOCAR
@@ -960,7 +961,32 @@
 ; user=> (eliminar-cero-decimal 'A)
 ; A
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
 (defn eliminar-cero-decimal [n]
+  (if (not (float? n)) 
+    n
+    (if
+      (and 
+        (= 
+          ((str/split (str n) #"") (- (count (str n)) 1)) 
+          "0"
+        ) ;; El ultimo valor es 0
+        (= 
+          ((str/split (str n) #"") (- (count (str n)) 2)) 
+          "."
+        ) ;; El ultimo valor es 0
+      )
+      (int n)
+      (if 
+        (= 
+          ((str/split (str n) #"") (- (count (str n)) 1)) 
+          "0"
+        ) 
+        (eliminar-cero-decimal (Float/parseFloat (subvec (str/split (str n) #"") 0 (- (count (str n)) 1))))
+        n
+      )
+    )
+  ) 
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -987,7 +1013,7 @@
 ; "-.5"
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn eliminar-cero-entero [n]
-  (clojure.string/replace (str n) #"0." ".")
+  (if (nil? n) nil (clojure.string/replace (str n) #"0." "."))
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
