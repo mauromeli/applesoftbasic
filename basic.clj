@@ -731,7 +731,26 @@
 ; user=> (expandir-nexts n)
 ; ((PRINT 1) (NEXT A) (NEXT B))
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn dividir-next [n]
+  (map list   
+      (repeat 
+        (count (remove #{(symbol ",")} (rest n))) ;; propago el primer argumento
+        (first n)
+      ) 
+      (into [] (remove #{(symbol ",")} (rest n)));; lista de parametros
+    )
+)
+
+(defn evalua-name [n]
+  (if 
+    (= (first n) 'NEXT)
+    (dividir-next n)
+    (list n)
+  )
+)
+
 (defn expandir-nexts [n]
+  (mapcat identity (map fun n))
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -751,6 +770,7 @@
 ;
 ; ?ERROR DISK FULL IN 100nil
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; REVISAR
 (defn dar-error [cod prog-ptrs]
   (if (int? (prog-ptrs 0))
     (str (buscar-mensaje cod) " IN " (prog-ptrs 0) "nil")
@@ -809,7 +829,20 @@
 ; 2
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn contar-sentencias [nro-linea amb]
+  (count
+    (expandir-nexts 
+      (rest 
+        (first 
+          (filter 
+            (fn [x] (= (first x) nro-linea))
+            (first amb)
+          )
+        )
+      )
+    )
+  )
 )
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; buscar-lineas-restantes: recibe un ambiente y retorna la
