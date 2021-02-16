@@ -797,7 +797,6 @@
 ;
 ; ?ERROR DISK FULL IN 100nil
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; REVISAR
 (defn dar-error [cod prog-ptrs]
   (if (int? (prog-ptrs 0))
     (symbol (str (buscar-mensaje cod) " IN " (prog-ptrs 0) "nil"))
@@ -821,7 +820,7 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; variable-integer?: predicado para determinar si un identificador
 ; es una variable entera, por ejemplo:
-; user=> (variable-integer? 'X%)
+; user=> (c? 'X%)
 ; true
 ; user=> (variable-integer? 'X)
 ; false
@@ -931,7 +930,22 @@
 ; user=> (extraer-data (list '(10 (PRINT X) (REM ESTE NO) (DATA 30)) '(20 (DATA HOLA)) (list 100 (list 'DATA 'MUNDO (symbol ",") 10 (symbol ",") 20))))
 ; ("HOLA" "MUNDO" 10 20)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+
+(defn recolector-data [n]
+  (if (= (first (second n)) 'DATA )
+    (remove #{(symbol ",")} (rest (second n)))
+  )
+)
+
+(defn conversor [n]
+  (if (int? n)
+    n
+    (str n)
+  )
+)
+
 (defn extraer-data [prg]
+  (map conversor (mapcat identity (map recolector-data prg)))
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -948,6 +962,9 @@
 ; [((10 (PRINT X))) [10 1] [] [] [] 0 {X$ "HOLA MUNDO"}]
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn ejecutar-asignacion [sentencia amb]
+  ;;(contains? '{X$ "HOLA"} 'X$)
+  ;;(get '{X$ "HOLA"} 'X$)
+  ;;(assoc )
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
