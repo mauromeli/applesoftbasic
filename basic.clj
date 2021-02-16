@@ -717,13 +717,17 @@
 )
 
 (defn cargar-linea [linea amb]
-  (into [] 
-    (list 
-      (sort (fn [a b] (Integer/signum (- (first a) (first b)))) 
-        (conj 
-          (remover-funcion (first linea) (first amb))
-          linea
-        ) 
+  (into []
+    (concat 
+      (into [] 
+        (list 
+          (sort (fn [a b] (Integer/signum (- (first a) (first b)))) 
+            (conj 
+              (remover-funcion (first linea) (first amb))
+              linea
+            )
+          )
+        )
       )
       (rest amb)
     )
