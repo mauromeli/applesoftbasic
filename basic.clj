@@ -694,13 +694,6 @@
 ; user=> (anular-invalidos '(IF X & * Y < 12 THEN LET ! X = 0))
 ; (IF X nil * Y < 12 THEN LET nil X = 0)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-
-(defn invalido? [x]
-  ;;(= x (some #{x} '(& ! ¡ ¿)
-  ;;  )
-  ;;)
-)
-
 (defn anular-invalidos [sentencia]
 )
 
@@ -716,8 +709,25 @@
 ; user=> (cargar-linea '(15 (X = X - 1)) ['((10 (PRINT X)) (15 (X = X + 1)) (20 (X = 100))) [:ejecucion-inmediata 0] [] [] [] 0 {}])
 ; [((10 (PRINT X)) (15 (X = X - 1)) (20 (X = 100))) [:ejecucion-inmediata 0] [] [] [] 0 {}]
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn remover-funcion [linea amb]
+  (filter 
+    (fn [x] (not= (first x) linea))
+    amb
+  )
+)
+
 (defn cargar-linea [linea amb]
-  (conj (list linea) (amb 0) )
+  (into [] 
+    (list 
+      (sort (fn [a b] (Integer/signum (- (first a) (first b)))) 
+        (conj 
+          (remover-funcion (first linea) (first amb))
+          linea
+        ) 
+      )
+      (rest amb)
+    )
+  )
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -750,7 +760,7 @@
 )
 
 (defn expandir-nexts [n]
-  (mapcat identity (map fun n))
+  (mapcat identity (map evalua-name n))
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -842,7 +852,6 @@
     )
   )
 )
-
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; buscar-lineas-restantes: recibe un ambiente y retorna la
@@ -1050,7 +1059,16 @@
 ; "-.5"
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn eliminar-cero-entero [n]
-  (if (nil? n) nil (clojure.string/replace (str n) #"0." "."))
+  (if (nil? n)
+    nil
+    (if (not (float? n))
+      (str n) 
+      (if (and (> 1 n) (< -1 n))
+        (clojure.string/replace (str n) #"0." ".")
+      (str n)
+      )
+    )
+  )
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
