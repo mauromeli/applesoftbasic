@@ -55,10 +55,10 @@
 ; dar-error                                            ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (deftest test-dar-error
-  (is (= "?SYNTAX ERRORnil" (dar-error 16 [:ejecucion-inmediata 4])))
-  (is (= "?ERROR DISK FULLnil" (dar-error "?ERROR DISK FULL" [:ejecucion-inmediata 4])))
-  (is (= "?ERROR DISK FULLnil" (dar-error 16 [100 3])))
-  (is (= "?ERROR DISK FULL IN 100nil" (dar-error "?ERROR DISK FULL" [100 3])))
+  (is (= (symbol "?SYNTAX ERRORnil") (dar-error 16 [:ejecucion-inmediata 4])))
+  (is (= (symbol "?ERROR DISK FULLnil") (dar-error "?ERROR DISK FULL" [:ejecucion-inmediata 4])))
+  (is (= (symbol "?SYNTAX ERROR IN 100nil") (dar-error 16 [100 3])))
+  (is (= (symbol "?ERROR DISK FULL IN 100nil") (dar-error "?ERROR DISK FULL" [100 3])))
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

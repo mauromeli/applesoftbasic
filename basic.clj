@@ -800,8 +800,8 @@
 ;; REVISAR
 (defn dar-error [cod prog-ptrs]
   (if (int? (prog-ptrs 0))
-    (str (buscar-mensaje cod) " IN " (prog-ptrs 0) "nil")
-    (str (buscar-mensaje cod) "nil")
+    (symbol (str (buscar-mensaje cod) " IN " (prog-ptrs 0) "nil"))
+    (symbol (str (buscar-mensaje cod) "nil"))
   )
 )
 
