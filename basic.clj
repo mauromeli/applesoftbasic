@@ -815,12 +815,16 @@
 ; false
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn variable-float? [x]
+  (case (str (last (str x)))
+    "%" false
+    "$" false
+    true)
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; variable-integer?: predicado para determinar si un identificador
 ; es una variable entera, por ejemplo:
-; user=> (c? 'X%)
+; user=> (variable-integer? 'X%)
 ; true
 ; user=> (variable-integer? 'X)
 ; false
@@ -828,6 +832,9 @@
 ; false
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn variable-integer? [x]
+  (case (str (last (str x)))
+    "%" true
+    false)
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -841,6 +848,9 @@
 ; false
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn variable-string? [x]
+  (case (str (last (str x)))
+    "$" true
+    false)
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -976,7 +986,23 @@
 ; user=> (preprocesar-expresion '(X + . / Y% * Z) ['((10 (PRINT X))) [10 1] [] [] [] 0 '{X 5 Y% 2}])
 ; (5 + 0 / 2 * 0)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; REVISAR
+(defn otro [key map]
+  (if (contains? map key)
+    (get map key)
+    (if (or (string? key) (operador? key))
+      key
+      ""
+    )
+  )
+)
+
+(defn func  [expr amb]
+  (map (fn [x] (otro x amb)) expr)
+)
+
 (defn preprocesar-expresion [expr amb]
+  (func expr (last amb))
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;

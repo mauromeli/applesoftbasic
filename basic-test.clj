@@ -74,8 +74,8 @@
 ; variable-integer?                                             ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (deftest test-variable-integer?
-  (is (= true (variable-integer? 'X)))
-  (is (= false (variable-integer? 'X%)))
+  (is (= false (variable-integer? 'X)))
+  (is (= true (variable-integer? 'X%)))
   (is (= false (variable-integer? 'X$)))
 )
 
@@ -83,9 +83,9 @@
 ; variable-string?                                             ;
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (deftest test-variable-string?
-  (is (= true (variable-string? 'X)))
+  (is (= false (variable-string? 'X)))
   (is (= false (variable-string? 'X%)))
-  (is (= false (variable-string? 'X$)))
+  (is (= true (variable-string? 'X$)))
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
