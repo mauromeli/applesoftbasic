@@ -668,7 +668,7 @@
     (some #{x} '(
       LOAD SAVE INPUT PRINT ? DATA READ REM RESTORE CLEAR LET
       LIST NEW RUN END FOR TO NEXT STEP GOSUB RETURN GOTO IF 
-      THEN ON ENV EXIT ATN INT SIN LED MID$ ASC CHR$ STR$
+      THEN ON ENV EXIT ATN INT SIN LED MID$ MID3$ ASC CHR$ STR$
       )
     )
   )
@@ -696,6 +696,7 @@
 ; user=> (anular-invalidos '(IF X & * Y < 12 THEN LET ! X = 0))
 ; (IF X nil * Y < 12 THEN LET nil X = 0)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; REVISAR
 (defn invalidos? [x]
   (if 
     (= x 
@@ -972,11 +973,16 @@
 ; [((10 (PRINT X))) [10 1] [] [] [] 0 {X$ "HOLA MUNDO"}]
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn ejecutar-asignacion [sentencia amb]
-  ;;(contains? '{X$ "HOLA"} 'X$)
-  ;;(get '{X$ "HOLA"} 'X$)
-  ;;(assoc )
+  (conj 
+    (vec (reverse (rest (reverse amb)))) 
+    (if (contains? (last amb) (first sentencia))
+      (assoc (last amb) (first sentencia) (calcular-expresion (rest (rest sentencia)) amb))
+      (hash-map 
+        (first sentencia) (calcular-expresion (rest (rest sentencia)) amb)
+      )
+    )
+  )
 )
-
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; preprocesar-expresion: recibe una expresion y la retorna con
 ; las variables reemplazadas por sus valores y el punto por el
@@ -986,23 +992,25 @@
 ; user=> (preprocesar-expresion '(X + . / Y% * Z) ['((10 (PRINT X))) [10 1] [] [] [] 0 '{X 5 Y% 2}])
 ; (5 + 0 / 2 * 0)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; REVISAR
-(defn otro [key map]
+(defn reemplazar [key map]
   (if (contains? map key)
     (get map key)
-    (if (or (string? key) (operador? key))
+    (if (or (string? key) (operador? key) (integer? key))
       key
-      ""
+      (if (variable-string? key) 
+        ""
+        0
+      )
     )
   )
 )
 
-(defn func  [expr amb]
-  (map (fn [x] (otro x amb)) expr)
+(defn maper-reemplazar [expr amb]
+  (map (fn [x] (reemplazar x amb)) expr)
 )
 
 (defn preprocesar-expresion [expr amb]
-  (func expr (last amb))
+  (maper-reemplazar expr (last amb))
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1037,7 +1045,44 @@
 ; 9
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn precedencia [token]
+  (case token
+    OR 1
+    AND 2
+    NOT 3
+    = 4
+    <> 4
+    < 4
+    > 4
+    <= 4
+    >= 4
+    =< 4
+    => 4
+    + 5
+    - 5
+    * 6
+    / 6
+    (symbol "^")  8
+    -u 7
+    MID$ 9
+    MID3$ 9
+    LEN 9
+    (if (palabra-reservada? token)
+      9
+      nil
+    )
+  )
 )
+
+; * Highest precedence: () [parentheses]
+; * ^ [exponentiation]
+; * - [unary minus]
+; * * [multiplication], / [division]
+; * + [addition], - [subtraction]
+; * = [equal], <> or >< [not equal], < [less than], > [greater than],
+; <= or =< [less than or equal], >= or => [greater than or equal]
+; * NOT [logical complement]
+; * AND [logical AND]
+; * Lowest precedence: OR [logical OR]
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; aridad: recibe un token y retorna el valor de su aridad, por
@@ -1053,7 +1098,19 @@
 ; user=> (aridad 'MID3$)
 ; 3
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+;; REVISAR
 (defn aridad [token]
+  (case token
+    THEN 0
+    SIN 1
+    -u 1
+    * 2
+    + 2
+    - 2
+    MID$ 2
+    MID3$ 3
+    0
+  )
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
