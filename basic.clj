@@ -912,11 +912,51 @@
 ; user=> (buscar-lineas-restantes [(list '(10 (PRINT X) (PRINT Y)) '(15 (X = X + 1)) (list 20 (list 'NEXT 'I (symbol ",") 'J))) [25 0] [] [] [] 0 {}])
 ; nil
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
+(defn filtrar-linea [cant expr]
+  (if (>= cant (count (rest expr)))
+    expr
+    (if (or (= cant 0) (< cant 0))
+      (list (first expr))
+      (conj (list (last expr)) (first expr))
+    )
+  )
+)
+
 (defn buscar-lineas-restantes
   ([amb] (buscar-lineas-restantes (amb 1) (amb 0)))
   ([act prg]
+      (if (integer? (first act))
+        (if (= (count (filter (fn [x] (>= (first x) (first act))) prg) ) 0)
+          nil
+          (conj
+            (rest 
+              (filter 
+                (fn [x] (>= (first x) (first act)))
+                prg
+              )
+            )
+            (filtrar-linea 
+              (last act)
+              (conj 
+                (expandir-nexts 
+                  (rest 
+                    (first 
+                      (filter 
+                        (fn [x] (>= (first x) (first act)))
+                        prg
+                      )
+                    )
+                  )
+                ) 
+                (first act)
+              )
+            )
+          )
+        )
+        nil
+      )
     )
-)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; continuar-linea: implementa la sentencia RETURN, retornando una
@@ -930,6 +970,7 @@
 ; [:omitir-restante [((10 (PRINT X)) (15 (GOSUB 100) (X = X + 1)) (20 (NEXT I , J))) [15 1] [] [] [] 0 {}]]
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn continuar-linea [amb]
+
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1103,10 +1144,23 @@
   (case token
     THEN 0
     SIN 1
+    LEN 1
+    ATN 1
+    INT 1
+    ASC 1
+    CHR$ 1
+    STR$ 1
+    LOAD 1
+    SAVE 1
+    PRINT 1
+    ? 1
+    INPUT 1
     -u 1
     * 2
     + 2
     - 2
+    (symbol "^") 2
+    / 2
     MID$ 2
     MID3$ 3
     0
