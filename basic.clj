@@ -528,6 +528,10 @@
   (if (or (contains? (set sentencia) nil) (and (palabra-reservada? (first sentencia)) (= (second sentencia) '=)))
       (do (dar-error 16 (amb 1)) [nil amb])  ; Syntax error  
       (case (first sentencia)
+        LIST (mostrar-listado (first amb))
+        ;LET (print amb)
+        DATA (extraer-data (first amb))
+        ;READ
         PRINT (let [args (next sentencia), resu (imprimir args amb)]
                    (if (and (nil? resu) (some? args))
                        [nil amb]
@@ -620,6 +624,7 @@
         (dar-error 16 nro-linea)  ; Syntax error
         (case operador
           -u (- operando)
+          ASC (if (not (string? operando)) (dar-error 163 nro-linea) (map int (str (first operando))))
           LEN (count operando)
           STR$ (if (not (number? operando)) (dar-error 163 nro-linea) (eliminar-cero-entero operando)) ; Type mismatch error
           CHR$ (if (or (< operando 0) (> operando 255)) (dar-error 53 nro-linea) (str (char operando)))))) ; Illegal quantity error
@@ -635,8 +640,13 @@
           + (if (and (string? operando1) (string? operando2))
                 (str operando1 operando2)
                 (+ operando1 operando2))
+          - (if (or (string? operando1) (string? operando2))
+                (dar-error 16 nro-linea)
+                (- operando1 operando2))
           / (if (= operando2 0) (dar-error 133 nro-linea) (/ operando1 operando2))  ; Division by zero error
+          * (* operando1 operando2)
           AND (let [op1 (+ 0 operando1), op2 (+ 0 operando2)] (if (and (not= op1 0) (not= op2 0)) 1 0))
+          OR  (let [op1 (+ 0 operando1), op2 (+ 0 operando2)] (if (or (not= op1 0 ) (not= op2 0)) 1 0))
           MID$ (if (< operando2 1)
                    (dar-error 53 nro-linea)  ; Illegal quantity error
                    (let [ini (dec operando2)] (if (>= ini (count operando1)) "" (subs operando1 ini))))))))
@@ -800,9 +810,10 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn dar-error [cod prog-ptrs]
   (if (int? (prog-ptrs 0))
-    (symbol (str (buscar-mensaje cod) " IN " (prog-ptrs 0) "nil"))
-    (symbol (str (buscar-mensaje cod) "nil"))
+    (print (str (buscar-mensaje cod) " IN " (prog-ptrs 0)))
+    (print (symbol (str (buscar-mensaje cod))))
   )
+  nil
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -970,7 +981,19 @@
 ; [:omitir-restante [((10 (PRINT X)) (15 (GOSUB 100) (X = X + 1)) (20 (NEXT I , J))) [15 1] [] [] [] 0 {}]]
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn continuar-linea [amb]
-
+  (if (= (count (amb 2)) 0)
+    (into [] (list (dar-error 22 (amb 1)) amb))
+    (into [] 
+      (list :omitir-restante 
+         (into []
+          (list (first amb) 
+                  (into [] (list (first ((amb 2) 0))  (- (last ((amb 2) 0)) 1)))
+                  (amb 3) (amb 4) (vec nil) 0 {}
+          )
+         )
+      )
+    )
+  )
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
