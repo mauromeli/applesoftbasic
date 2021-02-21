@@ -441,7 +441,7 @@
     (let [resu-redu
          (reduce
            (fn [pila token]
-               (let [ari (aridad token),
+                    (let [ari (aridad token),
                      resu (eliminar-cero-decimal 
                             (case ari
                               1 (aplicar token (first pila) nro-linea)
@@ -529,8 +529,9 @@
       (do (dar-error 16 (amb 1)) [nil amb])  ; Syntax error  
       (case (first sentencia)
         LIST (mostrar-listado (first amb))
-        ;LET (print amb)
+        LET  (ejecutar-asignacion (rest sentencia) amb);(count (filter (fn [x] (= (first x) (first (amb 1)))) (amb 0)))
         DATA (extraer-data (first amb))
+        CLEAR (driver-loop ['() [:ejecucion-inmediata 0] [] [] [] 0 {}]) 
         ;READ
         PRINT (let [args (next sentencia), resu (imprimir args amb)]
                    (if (and (nil? resu) (some? args))
@@ -563,18 +564,18 @@
                                (continuar-programa nuevo-amb)
                                [:omitir-restante nuevo-amb]))))
         IF (let [separados (split-with #(not (contains? #{"THEN" "GOTO"} (str %))) (next sentencia)),
-                 condicion-de-if (first separados),
-                 resto-if (second separados),
-                 sentencia-de-if (cond
-                                   (= (first resto-if) 'GOTO) resto-if
-                                   (= (first resto-if) 'THEN) (if (number? (second resto-if))
-                                                                  (cons 'GOTO (next resto-if))
-                                                                  (next resto-if))
-                                   :else (do (dar-error 16 (amb 1)) nil)),  ; Syntax error
-                 resu (calcular-expresion condicion-de-if amb)]
-                (if (zero? resu)
-                    [:omitir-restante amb]
-                    (recur sentencia-de-if amb)))
+                  condicion-de-if (first separados),
+                  resto-if (second separados),
+                  sentencia-de-if (cond
+                                    (= (first resto-if) 'GOTO) resto-if
+                                    (= (first resto-if) 'THEN) (if (number? (second resto-if))
+                                                                    (cons 'GOTO (next resto-if))
+                                                                    (next resto-if))
+                                    :else (do (dar-error 16 (amb 1)) nil)),  ; Syntax error
+                  resu (calcular-expresion condicion-de-if amb)]
+                    (if (zero? resu)
+                      [:omitir-restante amb]
+                      (recur sentencia-de-if amb)))
         INPUT (leer-con-enter (next sentencia) amb)
         ON (let [separados (split-with #(not (contains? #{"GOTO" "GOSUB"} (str %))) (next sentencia)),
                  indice-de-on (calcular-expresion (first separados) amb),
@@ -605,6 +606,7 @@
         NEXT (if (<= (count (next sentencia)) 1)
                  (retornar-al-for amb (fnext sentencia))
                   (do (dar-error 16 (amb 1)) [nil amb]))  ; Syntax error
+        END (prn "")
         (if (= (second sentencia) '=)
             (let [resu (ejecutar-asignacion sentencia amb)]
                  (if (nil? resu)
@@ -627,7 +629,11 @@
           ASC (if (not (string? operando)) (dar-error 163 nro-linea) (map int (str (first operando))))
           LEN (count operando)
           STR$ (if (not (number? operando)) (dar-error 163 nro-linea) (eliminar-cero-entero operando)) ; Type mismatch error
-          CHR$ (if (or (< operando 0) (> operando 255)) (dar-error 53 nro-linea) (str (char operando)))))) ; Illegal quantity error
+          CHR$ (if (or (< operando 0) (> operando 255)) (dar-error 53 nro-linea) (str (char operando))) ; Illegal quantity error
+          INT  (if (not (number? operando)) (dar-error 163 nro-linea) (int operador))
+          SIN  (if (not (number? operando)) (dar-error 163 nro-linea) (Math/sin operador))
+          ATN  (if (not (number? operando)) (dar-error 163 nro-linea) (Math/atan operador))))
+  )
   ([operador operando1 operando2 nro-linea]
     (if (or (nil? operando1) (nil? operando2))
         (dar-error 16 nro-linea)  ; Syntax error
@@ -644,6 +650,21 @@
                 (dar-error 16 nro-linea)
                 (- operando1 operando2))
           / (if (= operando2 0) (dar-error 133 nro-linea) (/ operando1 operando2))  ; Division by zero error
+          > (if (or (string? operando1) (string? operando2))
+                (dar-error 16 nro-linea)
+                (if (> operando1 operando2) 1 0))
+          < (if (or (string? operando1) (string? operando2))
+                (dar-error 16 nro-linea)
+                (if (< operando1 operando2) 1 0))
+          => (if (or (string? operando1) (string? operando2))
+                (dar-error 16 nro-linea)
+                (if (>= operando1 operando2) 1 0))
+          =< (if (or (string? operando1) (string? operando2))
+                (dar-error 16 nro-linea)
+                (if (<= operando1 operando2) 1 0))
+          <> (if (or (string? operando1) (string? operando2))
+                (dar-error 16 nro-linea)
+                (if (not= operando1 operando2) 1 0))
           * (* operando1 operando2)
           AND (let [op1 (+ 0 operando1), op2 (+ 0 operando2)] (if (and (not= op1 0) (not= op2 0)) 1 0))
           OR  (let [op1 (+ 0 operando1), op2 (+ 0 operando2)] (if (or (not= op1 0 ) (not= op2 0)) 1 0))
@@ -1041,7 +1062,7 @@
     (vec (reverse (rest (reverse amb)))) 
     (if (contains? (last amb) (first sentencia))
       (assoc (last amb) (first sentencia) (calcular-expresion (rest (rest sentencia)) amb))
-      (hash-map 
+      (assoc (last amb)
         (first sentencia) (calcular-expresion (rest (rest sentencia)) amb)
       )
     )
@@ -1130,10 +1151,13 @@
     MID$ 9
     MID3$ 9
     LEN 9
-    (if (palabra-reservada? token)
-      9
-      nil
-    )
+    ATN 9
+    INT 9
+    SIN 9
+    ASC 9 
+    CHR$ 9
+    STR$ 9
+    nil
   )
 )
 
@@ -1182,6 +1206,14 @@
     * 2
     + 2
     - 2
+    > 2
+    < 2
+    => 2
+    >= 2
+    <= 2
+    >< 2
+    <> 2
+    =< 2
     (symbol "^") 2
     / 2
     MID$ 2
