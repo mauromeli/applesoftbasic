@@ -716,7 +716,7 @@
 ; false
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn operador? [x]
-  (= x (some #{x} '(+ - * / ^ = <> < <= > >= AND OR)
+  (= x (some #{x} '(+ - * / ^ = <> < <= > >= AND OR LEN ASC SIN MID$ MID3$ INT ATN)
     )
   )
 )
