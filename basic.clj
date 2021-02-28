@@ -801,15 +801,17 @@
 )
 
 (defn evalua-name [n]
-  (if 
-    (= (first n) 'NEXT)
+  (if (and (= (first n) 'NEXT) (> (count n) 1))
     (dividir-next n)
     (list n)
   )
 )
 
 (defn expandir-nexts [n]
-  (mapcat identity (map evalua-name n))
+  (if (nil? n)
+    nil
+    (mapcat identity (map evalua-name n))
+  )
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -1157,7 +1159,10 @@
     ASC 9 
     CHR$ 9
     STR$ 9
-    nil
+    (if (= (symbol ",") token) 
+      0
+      nil
+      )
   )
 )
 
