@@ -62,6 +62,8 @@
       (println "Interprete de Applesoft II BASIC en Clojure")
       (println "Trabajo Practico de 75.14/95.48 Lenguajes Formales - 2020")
       (println)
+      (println "Alumno: Mauro Nicolas Di Pietro  - Padron: 93965")
+      (println)
       (println "Inspirado en:    ****************************************")
       (println "                 *  APPLESOFT ][  FLOATING POINT BASIC  *")
       (println "                 *               APRIL 1978             *")
@@ -207,7 +209,7 @@
                              (and (> (count (next variables)) 1) (not= (fnext variables) (symbol ","))))
                          (do (dar-error 16 (amb 1)) [:error-parcial res])  ; Syntax error
                          (recur (nnext variables) (next entradas) (assoc res 5 (inc (res 5)))))))))
-)
+  )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; leer-con-enter: recibe una lista con una cadena opcional
@@ -694,8 +696,8 @@
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn palabra-reservada? [x]
   (contains? #{
-     "EXIT" "ENV" "DATA" "REM" "NEW" "CLEAR" "LIST" "RUN" "LOAD" 
      "SAVE" "LET" "AND" "OR" "INT" "SIN" "ATN" "LEN" "MID$" "MID3$" "STR$" 
+     "EXIT" "ENV" "DATA" "REM" "NEW" "CLEAR" "LIST" "RUN" "LOAD" 
      "CHR$" "ASC" "GOTO" "ON" "IF" "THEN" "FOR" "TO" "STEP" "NEXT" 
      "GOSUB" "RETURN" "END" "INPUT" "READ" "RESTORE" "PRINT" 
      ";" ":" "." "(" ")" ","
@@ -729,7 +731,6 @@
 ; user=> (anular-invalidos '(IF X & * Y < 12 THEN LET ! X = 0))
 ; (IF X nil * Y < 12 THEN LET nil X = 0)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; REVISAR
 (defn invalidos? [x]
   (if 
     (= x 
@@ -852,12 +853,15 @@
 ; false
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn variable-float? [x]
-      (cond
-        (or (or  (or  (string? x) (palabra-reservada? x) )
-                     (nil? x))
-                (not (= (apply str (re-seq #"[A-Z]" (str x))) (str x) )))false
-        :else true)
-      )
+  (if 
+      (or 
+        (or  (or  (string? x) (palabra-reservada? x) )
+        (nil? x))
+        (not (= (apply str (re-seq #"[A-Z]" (str x))) (str x) ))
+      ) 
+    false
+    true)
+)
 
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -871,11 +875,11 @@
 ; false
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn variable-integer? [x]
-      (cond
-         (= "%" (str (last (seq (str x))))) true
-         :else false
-        )
-      )
+  (if (= "%" (str (last (seq (str x))))) 
+    true
+    false
+  )
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; variable-string?: predicado para determinar si un identificador
@@ -888,10 +892,13 @@
 ; false
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn variable-string? [x]
-      (cond
-        (or (palabra-reservada? x ) (nil? x)) false
-      (= "$" (str (last (seq (str x))))) true
-        :else false))
+  (if (or (palabra-reservada? x ) (nil? x)) 
+      false
+      (if (= "$" (str (last (seq (str x))))) 
+        true
+        false)
+  )
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; contar-sentencias: recibe un numero de linea y un ambiente y
@@ -951,51 +958,30 @@
 ; user=> (buscar-lineas-restantes [(list '(10 (PRINT X) (PRINT Y)) '(15 (X = X + 1)) (list 20 (list 'NEXT 'I (symbol ",") 'J))) [25 0] [] [] [] 0 {}])
 ; nil
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn filtrar-linea [cant expr]
-  (if (>= cant (count (rest expr)))
-    expr
-    (if (or (= cant 0) (< cant 0))
-      (list (first expr))
-      (conj (list (last expr)) (first expr))
-    )
+(defn retornar-lineas [posicion cant prg]
+  (reduce (fn [lista value]
+     (if (= posicion (first value)) 
+        (list (concat (list posicion) (drop (- (count (expandir-nexts (rest value))) cant) (expandir-nexts (rest value))) ))
+        (if (< posicion (first value)) 
+          (concat lista (list value))
+        )
+      )
+    ) #(conj % ()) prg
   )
 )
 
 (defn buscar-lineas-restantes
   ([amb] (buscar-lineas-restantes (amb 1) (amb 0)))
   ([act prg]
-      (if (integer? (first act))
-        (if (= (count (filter (fn [x] (>= (first x) (first act))) prg) ) 0)
-          nil
-          (conj
-            (rest 
-              (filter 
-                (fn [x] (>= (first x) (first act)))
-                prg
-              )
-            )
-            (filtrar-linea 
-              (last act)
-              (conj 
-                (expandir-nexts 
-                  (rest 
-                    (first 
-                      (filter 
-                        (fn [x] (>= (first x) (first act)))
-                        prg
-                      )
-                    )
-                  )
-                ) 
-                (first act)
-              )
-            )
-          )
-        )
+   (if (or 
+        (or (= (count prg) 0) (not (number? (first act))))
+        (and (= (count prg) 0) (every? true ((fn [value] (distinct? (first act) (first value))) prg) )) 
+        )    
         nil
-      )
-    )
+      (retornar-lineas (first act) (second act) prg)
+   )
   )
+)
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; continuar-linea: implementa la sentencia RETURN, retornando una
@@ -1011,16 +997,10 @@
 (defn continuar-linea [amb]
   (if (= (count (amb 2)) 0)
     (into [] (list (dar-error 22 (amb 1)) amb))
-    (into [] 
-      (list :omitir-restante 
-         (into []
-          (list (first amb) 
-                  (into [] (list (first ((amb 2) 0))  (- (last ((amb 2) 0)) 1)))
-                  (amb 3) (amb 4) (vec nil) 0 {}
-          )
-         )
-      )
-    )
+    (let [resultado (first (first (get amb 2)))
+       amb-actualizado (- (second (first (get amb 2))) 1) 
+    ]
+    [:omitir-restante [(first amb) [resultado amb-actualizado] (pop (amb 2)) (amb 3) (amb 4) (amb 5) (amb 6)]])
   )
 )
 
@@ -1085,38 +1065,27 @@
 ; user=> (preprocesar-expresion '(X + . / Y% * Z) ['((10 (PRINT X))) [10 1] [] [] [] 0 '{X 5 Y% 2}])
 ; (5 + 0 / 2 * 0)
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-(defn reemplazar [key map]
-  (if (contains? map key)
-    (get map key)
-    (if (or (string? key) (operador? key) (integer? key))
-      key
-      (if (variable-string? key) 
-        ""
-        0
-      )
-    )
+(defn preprocesar-expresion [expr amb]
+  (map
+    (fn [x] 
+      (cond
+        (= '0 x) (num x)
+        (= x (symbol ".")) 0
+        (variable-string? x) 
+          (if (nil? (get (last amb) x)) 
+            "" 
+            (get (last amb) x)
+          )
+        (or (variable-float? x) (variable-integer? x)) 
+          (if (nil? (get (last amb) x) ) 
+            0 
+            (get (last amb) x)
+          )
+        :else x
+      )) 
+    expr
   )
 )
-
-(defn maper-reemplazar [expr amb]
-  (map (fn [x] (reemplazar x amb)) expr)
-)
-
-(defn preprocesar-expresion-no [expr amb]
-  (maper-reemplazar expr (last amb))
-)
-
-(defn preprocesar-expresion [expr amb]
-   (map
-      #(cond
-        (= (symbol ".") %) 0
-        (= '0 %) (num %)
-        (variable-string? %) (if (nil? (get (nth amb 6) %)) "" (get (nth amb 6) %))
-        (or (variable-float? %) (variable-integer? %)) (if (nil? (get (nth amb 6) %) ) 0 (get (nth amb 6) %))
-        :else %
-        ) expr
-     )
-   )
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; desambiguar: recibe un expresion y la retorna sin los + unarios,
 ; con los - unarios reemplazados por -u y los MID$ ternarios
@@ -1165,7 +1134,6 @@
     - 5
     * 6
     / 6
-    (symbol "^")  8
     -u 7
     MID$ 9
     MID3$ 9
@@ -1178,8 +1146,11 @@
     STR$ 9
     (if (= (symbol ",") token) 
       0
-      nil
+      (if (= (symbol "^") token)  
+        8
+        nil
       )
+    )
   )
 )
 
@@ -1208,7 +1179,6 @@
 ; user=> (aridad 'MID3$)
 ; 3
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
-;; REVISAR
 (defn aridad [token]
   (case token
     -u 1
