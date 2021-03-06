@@ -45,6 +45,7 @@
 (def LISTA (list '(PRINT 1) (list 'NEXT 'A (symbol ",") 'B)))
 (deftest test-expandir-nexts
   (is (= '((PRINT 1) (NEXT A) (NEXT B)) (expandir-nexts LISTA)))
+  (is (= nil (expandir-nexts nil)))
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
