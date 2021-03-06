@@ -443,11 +443,11 @@
            (fn [pila token]
                     (let [ari (aridad token),
                      resu (eliminar-cero-decimal 
-                            (case ari
-                              1 (aplicar token (first pila) nro-linea)
-                              2 (aplicar token (second pila) (first pila) nro-linea)
-                              3 (aplicar token (nth pila 2) (nth pila 1) (nth pila 0) nro-linea)
-                              token))]
+                              (case ari
+                                1 (aplicar token (first pila) nro-linea)
+                                2 (aplicar token (second pila) (first pila) nro-linea)
+                                3 (aplicar token (nth pila 2) (nth pila 1) (nth pila 0) nro-linea)
+                                token))]
                     (if (nil? resu)
                         (reduced resu)
                         (cons resu (drop ari pila)))))
@@ -528,11 +528,11 @@
   (if (or (contains? (set sentencia) nil) (and (palabra-reservada? (first sentencia)) (= (second sentencia) '=)))
       (do (dar-error 16 (amb 1)) [nil amb])  ; Syntax error  
       (case (first sentencia)
+        RESTORE [:sin-errores (assoc amb 5 0)]
         LIST (mostrar-listado (first amb))
-        LET  (ejecutar-asignacion (rest sentencia) amb);(count (filter (fn [x] (= (first x) (first (amb 1)))) (amb 0)))
-        DATA (extraer-data (first amb))
+        LET  (evaluar (rest sentencia) amb);(count (filter (fn [x] (= (first x) (first (amb 1)))) (amb 0)))
         CLEAR (driver-loop ['() [:ejecucion-inmediata 0] [] [] [] 0 {}]) 
-        ;READ
+        READ (leer-data (next sentencia) amb)
         PRINT (let [args (next sentencia), resu (imprimir args amb)]
                    (if (and (nil? resu) (some? args))
                        [nil amb]
@@ -606,7 +606,7 @@
         NEXT (if (<= (count (next sentencia)) 1)
                  (retornar-al-for amb (fnext sentencia))
                   (do (dar-error 16 (amb 1)) [nil amb]))  ; Syntax error
-        END (prn "")
+        END [nil amb]
         (if (= (second sentencia) '=)
             (let [resu (ejecutar-asignacion sentencia amb)]
                  (if (nil? resu)
@@ -626,13 +626,13 @@
         (dar-error 16 nro-linea)  ; Syntax error
         (case operador
           -u (- operando)
-          ASC (if (not (string? operando)) (dar-error 163 nro-linea) (map int (str (first operando))))
+          ASC (if (not (string? operando)) (dar-error 163 nro-linea) (int (first operando)))
           LEN (count operando)
           STR$ (if (not (number? operando)) (dar-error 163 nro-linea) (eliminar-cero-entero operando)) ; Type mismatch error
           CHR$ (if (or (< operando 0) (> operando 255)) (dar-error 53 nro-linea) (str (char operando))) ; Illegal quantity error
-          INT  (if (not (number? operando)) (dar-error 163 nro-linea) (int operador))
-          SIN  (if (not (number? operando)) (dar-error 163 nro-linea) (Math/sin operador))
-          ATN  (if (not (number? operando)) (dar-error 163 nro-linea) (Math/atan operador))))
+          INT  (int operando)
+          SIN  (Math/sin operando)
+          ATN  (Math/atan operando)))
   )
   ([operador operando1 operando2 nro-linea]
     (if (or (nil? operando1) (nil? operando2))
@@ -656,15 +656,13 @@
           < (if (or (string? operando1) (string? operando2))
                 (dar-error 16 nro-linea)
                 (if (< operando1 operando2) 1 0))
-          => (if (or (string? operando1) (string? operando2))
+          >= (if (or (string? operando1) (string? operando2))
                 (dar-error 16 nro-linea)
                 (if (>= operando1 operando2) 1 0))
-          =< (if (or (string? operando1) (string? operando2))
+          <= (if (or (string? operando1) (string? operando2))
                 (dar-error 16 nro-linea)
                 (if (<= operando1 operando2) 1 0))
-          <> (if (or (string? operando1) (string? operando2))
-                (dar-error 16 nro-linea)
-                (if (not= operando1 operando2) 1 0))
+          <> (if (not= operando1 operando2) 1 0)
           * (* operando1 operando2)
           AND (let [op1 (+ 0 operando1), op2 (+ 0 operando2)] (if (and (not= op1 0) (not= op2 0)) 1 0))
           OR  (let [op1 (+ 0 operando1), op2 (+ 0 operando2)] (if (or (not= op1 0 ) (not= op2 0)) 1 0))
@@ -695,14 +693,16 @@
 ; false
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn palabra-reservada? [x]
-  (= x 
-    (some #{x} '(
-      LOAD SAVE INPUT PRINT ? DATA READ REM RESTORE CLEAR LET
-      LIST NEW RUN END FOR TO NEXT STEP GOSUB RETURN GOTO IF 
-      THEN ON ENV EXIT ATN INT SIN LED MID$ MID3$ ASC CHR$ STR$
-      )
+  (contains? #{
+     "EXIT" "ENV" "DATA" "REM" "NEW" "CLEAR" "LIST" "RUN" "LOAD" 
+     "SAVE" "LET" "AND" "OR" "INT" "SIN" "ATN" "LEN" "MID$" "MID3$" "STR$" 
+     "CHR$" "ASC" "GOTO" "ON" "IF" "THEN" "FOR" "TO" "STEP" "NEXT" 
+     "GOSUB" "RETURN" "END" "INPUT" "READ" "RESTORE" "PRINT" 
+     ";" ":" "." "(" ")" ","
+      }
+
+      (str x)
     )
-  )
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -716,9 +716,11 @@
 ; false
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn operador? [x]
-  (= x (some #{x} '(+ - * / ^ = <> < <= > >= AND OR LEN ASC SIN MID$ MID3$ INT ATN)
-    )
-  )
+  (contains? #{
+    '= '<> '< '<= '> '>= 
+    '+ '- '* '/ (symbol "^") '? 
+    'AND 'OR
+    } x)
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -808,10 +810,10 @@
 )
 
 (defn expandir-nexts [n]
-  (if (nil? n)
-    nil
-    (mapcat identity (map evalua-name n))
-  )
+    (if (nil? n)
+      nil
+      (mapcat identity (map evalua-name n))
+    )
 )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
@@ -850,11 +852,13 @@
 ; false
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn variable-float? [x]
-  (case (str (last (str x)))
-    "%" false
-    "$" false
-    true)
-)
+      (cond
+        (or (or  (or  (string? x) (palabra-reservada? x) )
+                     (nil? x))
+                (not (= (apply str (re-seq #"[A-Z]" (str x))) (str x) )))false
+        :else true)
+      )
+
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; variable-integer?: predicado para determinar si un identificador
@@ -867,10 +871,11 @@
 ; false
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn variable-integer? [x]
-  (case (str (last (str x)))
-    "%" true
-    false)
-)
+      (cond
+         (= "%" (str (last (seq (str x))))) true
+         :else false
+        )
+      )
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; variable-string?: predicado para determinar si un identificador
@@ -883,10 +888,10 @@
 ; false
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 (defn variable-string? [x]
-  (case (str (last (str x)))
-    "$" true
-    false)
-)
+      (cond
+        (or (palabra-reservada? x ) (nil? x)) false
+      (= "$" (str (last (seq (str x))))) true
+        :else false))
 
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; contar-sentencias: recibe un numero de linea y un ambiente y
@@ -1070,6 +1075,7 @@
     )
   )
 )
+
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; preprocesar-expresion: recibe una expresion y la retorna con
 ; las variables reemplazadas por sus valores y el punto por el
@@ -1096,10 +1102,21 @@
   (map (fn [x] (reemplazar x amb)) expr)
 )
 
-(defn preprocesar-expresion [expr amb]
+(defn preprocesar-expresion-no [expr amb]
   (maper-reemplazar expr (last amb))
 )
 
+(defn preprocesar-expresion [expr amb]
+   (map
+      #(cond
+        (= (symbol ".") %) 0
+        (= '0 %) (num %)
+        (variable-string? %) (if (nil? (get (nth amb 6) %)) "" (get (nth amb 6) %))
+        (or (variable-float? %) (variable-integer? %)) (if (nil? (get (nth amb 6) %) ) 0 (get (nth amb 6) %))
+        :else %
+        ) expr
+     )
+   )
 ;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;;
 ; desambiguar: recibe un expresion y la retorna sin los + unarios,
 ; con los - unarios reemplazados por -u y los MID$ ternarios
@@ -1194,7 +1211,7 @@
 ;; REVISAR
 (defn aridad [token]
   (case token
-    THEN 0
+    -u 1
     SIN 1
     LEN 1
     ATN 1
@@ -1202,28 +1219,14 @@
     ASC 1
     CHR$ 1
     STR$ 1
-    LOAD 1
-    SAVE 1
-    PRINT 1
-    ? 1
-    INPUT 1
-    -u 1
-    * 2
-    + 2
-    - 2
-    > 2
-    < 2
-    => 2
-    >= 2
-    <= 2
-    >< 2
-    <> 2
-    =< 2
-    (symbol "^") 2
-    / 2
+    OR 2
+    AND 2
     MID$ 2
     MID3$ 3
-    0
+    (if (operador? token)
+      2
+      0
+    )
   )
 )
 
