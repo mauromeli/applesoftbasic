@@ -16,7 +16,7 @@
 160 PRINT
 170 GOTO 50
 180 END
-200 HEX$ = ""  
+200 HEX$ = ""
 210 LET B = A - INT (A/16) * 16 : REM B = A MOD 16
 220 IF B < 10 THEN H$ = STR$(B)
 230 IF B >= 10 AND B <= 15 THEN H$ = CHR$(65 + B - 10)
